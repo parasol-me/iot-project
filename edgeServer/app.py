@@ -7,11 +7,6 @@ from models import db_session, SensorData
 from schema import schema
 from threading import Thread
 
-class GraphQLCustomCoreBackend(GraphQLCoreBackend):
-    def __init__(self, executor=None):
-        super().__init__(executor)
-        self.execute_params['allow_subscriptions'] = True
-
 app = Flask(__name__)
 ser = serial.Serial('/dev/ttyS0', 9600)
 
@@ -20,8 +15,7 @@ app.add_url_rule(
     view_func=GraphQLView.as_view(
         'graphql',
         schema=schema,
-        graphiql=True,
-        backend=GraphQLCustomCoreBackend()
+        graphiql=True
     )
 )
     
