@@ -3,11 +3,13 @@ import serial
 import time
 from flask import Flask
 from flask_graphql import GraphQLView
+from flask_cors import CORS
 from models import db_session, SensorData
 from schema import schema
 from threading import Thread
 
 app = Flask(__name__)
+CORS(app)
 ser = serial.Serial('/dev/ttyS0', 9600)
 
 app.add_url_rule(

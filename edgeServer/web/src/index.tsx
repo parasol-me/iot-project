@@ -4,12 +4,24 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+import { Provider, Client, dedupExchange, fetchExchange } from 'urql'
+import { cacheExchange } from '@urql/exchange-graphcache';
+
+const cache = cacheExchange({})
+
+const client = new Client({
+  url: 'http://192.168.0.150:5000/graphql',
+  exchanges: [dedupExchange, cache, fetchExchange],
+})
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <Provider value={client}>
+      <App />
+    </Provider>
   </React.StrictMode>
 );
 
