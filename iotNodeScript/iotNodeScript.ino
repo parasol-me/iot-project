@@ -1,6 +1,6 @@
 #include "DHT.h"
 #define LEDPIN 4
-#define FANPIN 7
+#define FANPIN 9
 #define DHTPIN 2
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
@@ -9,6 +9,7 @@ int timerCount = 0;
 String delimiter = ", ";
 
 bool readSensors = false;
+bool fanOn = false;
 
 void setup() 
 {
@@ -36,29 +37,31 @@ void setup()
 }
 
 void loop() {
+  // conditional triggers
   if (Serial.available() > 0) {
-      // Read serial input
-      String input = Serial.readStringUntil('\n');
-      char ledFlag = input[0];
-      char fanFlag = input[1];
-       
-      if (ledFlag == '1') {
-        digitalWrite(LEDPIN, HIGH);
-      } else if(ledFlag == '0') {
-        digitalWrite(LEDPIN, LOW);
-      }
+    // Read serial input
+    String input = Serial.readStringUntil('\n');
+    char ledFlag = input[0];
+    char fanFlag = input[1];
+    
+    // Only write to output if the state would be different
+    if (ledFlag == '1' && digitalRead(LEDPIN) == LOW) {
+      digitalWrite(LEDPIN, HIGH);
+    } else if(ledFlag == '0' && digitalRead(LEDPIN) == HIGH) {
+      digitalWrite(LEDPIN, LOW);
+    }
 
-      if (fanFlag == '1') {
-        digitalWrite(FANPIN, HIGH);
-      } else if(fanFlag == '0') {
-        digitalWrite(FANPIN, LOW);
-      }
-   }
+    // use bool state flag, analog read is innacurrate
+    if (fanFlag == '1' && !fanOn) {
+      analogWrite(FANPIN, 255);
+      fanOn = true;
+    } else if(fanFlag == '0' && fanOn) {
+      analogWrite(FANPIN, 0);
+      fanOn = false;
+    }
+  }
 
   if (readSensors) {
-    // Reading temperature or humidity takes about 250 milliseconds!
-    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-
     // Read humidity
     float h = dht.readHumidity();
     
