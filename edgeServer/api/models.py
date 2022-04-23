@@ -9,7 +9,6 @@ db_session = scoped_session(sessionmaker(autocommit=False,
                                          bind=engine))
 
 Base = declarative_base()
-# We will need this for querying
 Base.query = db_session.query_property()
 
 
@@ -20,3 +19,8 @@ class SensorData(Base):
     humidity_percentage = Column(String)
     tempurature_celcius = Column(String)
     heat_index_celcius = Column(String)
+
+class SensorTriggers:
+    def __init__(self, ldr_min_threshold = 100, temp_max_threshold = 25):
+        self.ldr_min_threshold = ldr_min_threshold
+        self.temp_max_threshold = temp_max_threshold

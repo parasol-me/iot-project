@@ -2,6 +2,8 @@ import { gql, useQuery } from "urql";
 import styled from "styled-components";
 import { parseISO } from "date-fns";
 import { Datum, LineSvgProps, ResponsiveLine } from "@nivo/line";
+import React from "react";
+import _ from "lodash";
 
 const ChartsWrapper = styled.div`
   overflow: hidden;
@@ -11,8 +13,37 @@ const LineChartWrapper = styled.div`
   height: 50vh;
 `;
 
+const StatusRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 1rem;
+  align-items: center;
+`;
+
+const StatusItem = styled.div`
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-right: 1rem;
+`;
+
+const AggregateRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  padding: 1rem;
+  align-items: center;
+`;
+
+const AggregateItem = styled.div`
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-right: 1rem;
+`;
+
 const SENSOR_DATA_QUERY = gql`
-  query ($start: DateTime!, $end: DateTime!) {
+  query allSensorData($start: DateTime!, $end: DateTime!) {
     allSensorData(filters: { dateTimeLte: $end, dateTimeGte: $start }) {
       edges {
         node {
@@ -71,8 +102,8 @@ interface Props {
   endTime: Date;
 }
 
-function Charts(props: Props) {
-  const {startTime, endTime} = props;
+function ChartsComponent(props: Props) {
+  const { startTime, endTime } = props;
 
   const [result] = useQuery({
     query: SENSOR_DATA_QUERY,
@@ -90,6 +121,55 @@ function Charts(props: Props) {
 
   return (
     <ChartsWrapper>
+      <StatusRow>
+        <StatusItem>
+          <h2 style={{ color: "white" }}>LDR Voltage</h2>
+          <h1 style={{ color: "white", margin: 0 }}>{`${
+            sensorData[sensorData.length - 1].node.ldrAnalogVoltage
+          }/1023`}</h1>
+        </StatusItem>
+        <StatusItem>
+          <h2 style={{ color: "white" }}>Humidity</h2>
+          <h1 style={{ color: "white", margin: 0 }}>{`${
+            sensorData[sensorData.length - 1].node.humidityPercentage
+          }%`}</h1>
+        </StatusItem>
+        <StatusItem>
+          <h2 style={{ color: "white" }}>Tempurature</h2>
+          <h1 style={{ color: "white", margin: 0 }}>{`${
+            sensorData[sensorData.length - 1].node.tempuratureCelcius
+          }°C`}</h1>
+        </StatusItem>
+        <StatusItem>
+          <h2 style={{ color: "white" }}>Heat Index</h2>
+          <h1 style={{ color: "white", margin: 0 }}>{`${
+            sensorData[sensorData.length - 1].node.heatIndexCelcius
+          }°C`}</h1>
+        </StatusItem>
+      </StatusRow>
+      <AggregateRow>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Average</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${_.meanBy(
+            sensorData,
+            (edge) => parseInt(edge.node.ldrAnalogVoltage)
+          ).toFixed(2)}`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Min</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.minBy(sensorData, (edge) => parseInt(edge.node.ldrAnalogVoltage))
+              ?.node.ldrAnalogVoltage
+          }`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Max</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.maxBy(sensorData, (edge) => parseInt(edge.node.ldrAnalogVoltage))
+              ?.node.ldrAnalogVoltage
+          }`}</h3>
+        </AggregateItem>
+      </AggregateRow>
       <LineChartWrapper>
         <ResponsiveLine
           {...commonProperties}
@@ -111,6 +191,39 @@ function Charts(props: Props) {
           }}
         />
       </LineChartWrapper>
+      <AggregateRow>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Average</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${_.meanBy(
+            sensorData.filter(
+              (edge) => edge.node.humidityPercentage !== " NAN"
+            ),
+            (edge) => parseFloat(edge.node.humidityPercentage)
+          ).toFixed(2)}%`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Min</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.minBy(
+              sensorData.filter(
+                (edge) => edge.node.humidityPercentage !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.humidityPercentage)
+            )?.node.humidityPercentage
+          }%`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Max</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.maxBy(
+              sensorData.filter(
+                (edge) => edge.node.humidityPercentage !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.humidityPercentage)
+            )?.node.humidityPercentage
+          }%`}</h3>
+        </AggregateItem>
+      </AggregateRow>
       <LineChartWrapper>
         <ResponsiveLine
           {...commonProperties}
@@ -118,7 +231,7 @@ function Charts(props: Props) {
             {
               id: "humidity",
               data: sensorData
-                .filter((edge) => edge.node.humidityPercentage != " NAN")
+                .filter((edge) => edge.node.humidityPercentage !== " NAN")
                 .map((edge) => {
                   const node = edge.node;
                   return {
@@ -134,6 +247,72 @@ function Charts(props: Props) {
           }}
         />
       </LineChartWrapper>
+      <AggregateRow>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Average</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${_.meanBy(
+            sensorData.filter(
+              (edge) => edge.node.tempuratureCelcius !== " NAN"
+            ),
+            (edge) => parseFloat(edge.node.tempuratureCelcius)
+          ).toFixed(2)}°C`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Min</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.minBy(
+              sensorData.filter(
+                (edge) => edge.node.tempuratureCelcius !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.tempuratureCelcius)
+            )?.node.tempuratureCelcius
+          }°C`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Max</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.maxBy(
+              sensorData.filter(
+                (edge) => edge.node.tempuratureCelcius !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.tempuratureCelcius)
+            )?.node.tempuratureCelcius
+          }°C`}</h3>
+        </AggregateItem>
+      </AggregateRow>
+      <AggregateRow>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Average</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${_.meanBy(
+            sensorData.filter(
+              (edge) => edge.node.heatIndexCelcius !== " NAN"
+            ),
+            (edge) => parseFloat(edge.node.heatIndexCelcius)
+          ).toFixed(2)}°C`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Min</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.minBy(
+              sensorData.filter(
+                (edge) => edge.node.heatIndexCelcius !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.heatIndexCelcius)
+            )?.node.heatIndexCelcius
+          }°C`}</h3>
+        </AggregateItem>
+        <AggregateItem>
+          <h4 style={{ color: "white" }}>Max</h4>
+          <h3 style={{ color: "white", margin: 0 }}>{`${
+            _.maxBy(
+              sensorData.filter(
+                (edge) => edge.node.heatIndexCelcius !== " NAN"
+              ),
+              (edge) => parseFloat(edge.node.heatIndexCelcius)
+            )?.node.heatIndexCelcius
+          }°C`}</h3>
+        </AggregateItem>
+      </AggregateRow>
       <LineChartWrapper>
         <ResponsiveLine
           {...commonProperties}
@@ -141,7 +320,7 @@ function Charts(props: Props) {
             {
               id: "Tempurature",
               data: sensorData
-                .filter((edge) => edge.node.tempuratureCelcius != " NAN")
+                .filter((edge) => edge.node.tempuratureCelcius !== " NAN")
                 .map((edge) => {
                   const node = edge.node;
                   return {
@@ -153,7 +332,7 @@ function Charts(props: Props) {
             {
               id: "Heat Index",
               data: sensorData
-                .filter((edge) => edge.node.heatIndexCelcius != " NAN")
+                .filter((edge) => edge.node.heatIndexCelcius !== " NAN")
                 .map((edge) => {
                   const node = edge.node;
                   return {
@@ -199,4 +378,4 @@ function Charts(props: Props) {
   );
 }
 
-export default Charts;
+export const Charts = React.memo(ChartsComponent);

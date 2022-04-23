@@ -6,6 +6,7 @@ from flask_graphql import GraphQLView
 from flask_cors import CORS
 from models import db_session, SensorData
 from schema import schema
+import state
 from threading import Thread
 
 app = Flask(__name__)
@@ -20,7 +21,6 @@ app.add_url_rule(
         graphiql=True
     )
 )
-    
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -36,6 +36,20 @@ def read_serial():
                 tempurature_celcius = line[2],
                 heat_index_celcius = line[3]
             )
+
+            ledFlag = "0"
+            fanFlag = "0"
+
+            if (int(sensorDataRow.ldr_analog_voltage) <= state.sensorTriggers.ldr_min_threshold):
+                ledFlag = 1
+            if (int(sensorDataRow.ldr_analog_voltage) > state.sensorTriggers.ldr_min_threshold):
+                ledFlag = 0
+            if (float(sensorDataRow.tempurature_celcius) >= state.sensorTriggers.temp_max_threshold):
+                fanFlag = 1
+            if (float(sensorDataRow.tempurature_celcius) < state.sensorTriggers.temp_max_threshold):
+                fanFlag = 0
+
+            ser.write("{}{}\n".format(ledFlag, fanFlag).encode("utf-8"))
             db_session.add(sensorDataRow)
             db_session.commit()
             print(line)

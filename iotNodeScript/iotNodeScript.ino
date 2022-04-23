@@ -1,17 +1,19 @@
 #include "DHT.h"
-
+#define LEDPIN 4
+#define FANPIN 7
 #define DHTPIN 2
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
 int timerCount = 0;
 String delimiter = ", ";
-String decimalPoint = ".";
 
 bool readSensors = false;
 
 void setup() 
 {
+  pinMode(LEDPIN, OUTPUT);
+  pinMode(FANPIN, OUTPUT);
   Serial.begin(9600);
 
   // digital humidity and tempurature
@@ -34,7 +36,24 @@ void setup()
 }
 
 void loop() {
-  // TODO: conditional triggers and actuator control from serial read goes here
+  if (Serial.available() > 0) {
+      // Read serial input
+      String input = Serial.readStringUntil('\n');
+      char ledFlag = input[0];
+      char fanFlag = input[1];
+       
+      if (ledFlag == '1') {
+        digitalWrite(LEDPIN, HIGH);
+      } else if(ledFlag == '0') {
+        digitalWrite(LEDPIN, LOW);
+      }
+
+      if (fanFlag == '1') {
+        digitalWrite(FANPIN, HIGH);
+      } else if(fanFlag == '0') {
+        digitalWrite(FANPIN, LOW);
+      }
+   }
 
   if (readSensors) {
     // Reading temperature or humidity takes about 250 milliseconds!
@@ -52,6 +71,7 @@ void loop() {
     // get ldr value from analogue sensor
     int ldr = analogRead(A0);
 
+    // send to edge server
     Serial.println(ldr + delimiter + h + delimiter + t + delimiter + hic);
 
     readSensors = false;
