@@ -15,11 +15,13 @@ void setup()
 {
   pinMode(LEDPIN, OUTPUT);
   pinMode(FANPIN, OUTPUT);
+  
   Serial.begin(9600);
 
   // digital humidity and tempurature
   dht.begin();
 
+  // ISR setup from Week 6 Task 4 tutorial
   cli();                      //stop interrupts for till we make the settings
   /*1. First we reset the control register to make sure we start with everything disabled.*/
   TCCR1A = 0;                 // Reset entire TCCR1A to 0 
